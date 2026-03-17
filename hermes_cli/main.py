@@ -2122,7 +2122,17 @@ def _restore_stashed_changes(
     print("  Review `git diff` / `git status` if Hermes behaves unexpectedly.")
     return True
 
-
+def _invalidate_update_cache():
+    """Delete the update-check cache so ``hermes --version`` doesn't
+    report a stale "commits behind" count after a successful update."""
+    try:
+        cache_file = Path(os.getenv(
+            "HERMES_HOME", Path.home() / ".hermes"
+        )) / ".update_check"
+        if cache_file.exists():
+            cache_file.unlink()
+    except Exception:
+        pass
 
 def cmd_update(args):
     """Update Hermes Agent to the latest version."""
@@ -2195,6 +2205,7 @@ def cmd_update(args):
         commit_count = int(result.stdout.strip())
         
         if commit_count == 0:
+            _invalidate_update_cache()
             print("✓ Already up to date!")
             return
         
@@ -2214,6 +2225,8 @@ def cmd_update(args):
                     auto_stash_ref,
                     prompt_user=prompt_for_restore,
                 )
+        
+        _invalidate_update_cache()
         
         # Reinstall Python dependencies (prefer uv for speed, fall back to pip)
         print("→ Updating Python dependencies...")
