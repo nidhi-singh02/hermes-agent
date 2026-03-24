@@ -347,7 +347,9 @@ def _transcribe_local_command(file_path: str, model_name: str) -> Dict[str, Any]
                 language=shlex.quote(language),
                 model=shlex.quote(normalized_model),
             )
-            subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
+            # SECURITY: avoid shell=True — shlex.split preserves quoted args from
+            # shlex.quote() above while eliminating shell injection surface.
+            subprocess.run(shlex.split(command), shell=False, check=True, capture_output=True, text=True)
 
             txt_files = sorted(Path(output_dir).glob("*.txt"))
             if not txt_files:

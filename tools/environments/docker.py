@@ -389,7 +389,10 @@ class DockerEnvironment(BaseEnvironment):
             exec_command = f"cd {work_dir} && {exec_command}"
             work_dir = "/"
 
-        assert self._inner.container_id, "Container not started"
+        # FIX: use explicit check instead of assert — assertions are stripped
+        # by python -O, which would silently allow commands on a None container.
+        if not self._inner.container_id:
+            raise RuntimeError("Container not started")
         cmd = [self._inner.config.executable, "exec"]
         if effective_stdin is not None:
             cmd.append("-i")
