@@ -378,8 +378,13 @@ class TestTranscribeLocalCommand:
             return _TempDir()
 
         def fake_run(cmd, *args, **kwargs):
-            if isinstance(cmd, list):
-                output_path = cmd[-1]
+            # After shell-injection hardening, both ffmpeg prep and the
+            # local STT command arrive as lists (shlex.split).  Distinguish
+            # them by checking whether the binary looks like ffmpeg.
+            cmd_list = cmd if isinstance(cmd, list) else [cmd]
+            is_ffmpeg = "ffmpeg" in cmd_list[0]
+            if is_ffmpeg:
+                output_path = cmd_list[-1]
                 with open(output_path, "wb") as handle:
                     handle.write(b"RIFF....WAVEfmt ")
                 return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
